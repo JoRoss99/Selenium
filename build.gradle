@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+
+    // Cucumber JUnit 4 dependency
+    testImplementation 'io.cucumber:cucumber-java:7.15.0'  // Cucumber for Java
+    testImplementation 'io.cucumber:cucumber-junit:7.15.0'  // Cucumber JUnit integration
+
+    implementation 'org.seleniumhq.selenium:selenium-java:4.9.0'
+    implementation 'io.github.bonigarcia:webdrivermanager:5.3.2'
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    
+}
+
+test {
+    useJUnit()
+//    systemProperty 'cucumber.features', 'classpath:features/calculator.feature'  // Tentukan lokasi file feature
+//    // Menonaktifkan log Cucumber untuk peringatan
+//    jvmArgs '-Dorg.slf4j.simpleLogger.log.io.cucumber=error'
+
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+def tags = (findProperty('tags') == null) ? 'not @exclude' : findProperty('tags') + ' and not @exclude'
+
+task cucumber() {
+    description("Running Cucumber Test")
+    dependsOn assemble, compileTestJava
+    doLast {
+        javaexec {
+            main = "io.cucumber.core.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = [
+                    '--plugin', 'html:reports/index.html',
+                    '--plugin', 'pretty',
+                    '--glue', 'com.fajarb',
+                    '--tags', "${tags}",
+                    'src/test/resources'
+            ]
+        }
+    }
+}
+
